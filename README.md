@@ -117,35 +117,54 @@ test/anims.html           dev-only side view of every character × action clip
 | Chrome (desktop, macOS) | Real | Full run of all 4 games, hub → redeem → CTA; keyboard + mouse; console clean |
 | Chrome desktop, iframes at 320×568 and 390×844 CSS px | Emulated size (mouse pointer, not touch) | Layout of hub, HUD, modals, controls; rotate prompt at 568×320 |
 | Production ZIP served with `python3 -m http.server` | Real | Loads and plays; `performance` resource list shows only same-origin files (0 external requests) |
-| _iPhone Safari / Android Chrome via `npm run dev` on LAN_ | **Not yet tested** | (fill in) |
+| iPhone, Safari, via `npm run dev` on the LAN | **Real** | Full playthrough with touch: joystick + buttons, all 4 games, hub → redeem → CTA. Worked well |
+| Android (Chrome) | **Not tested** | No Android device available |
 
 **Edge cases verified** (scripted in the browser console against `window.__debug`):
-- 5 consecutive restarts: listener count (24), timers (0) and scene object count (504) identical every time.
+- Repeated restarts (checked in the Warrior and Rogue stages, with KayKit models loaded): listener count (24), pending timers (0) and scene object count identical after every restart.
 - Hidden tab for 3 s: game time advanced 0 s, resume prompt shown, no jump after resuming.
 - Mage: walking off the ledge → fall, lose a heart, respawn. Bridge only walkable after it rises.
 - Archer: correct order opens the gate; the shield blocks shots outside its gap.
 - Rogue: backstab from behind kills instantly; striking from the front gets the rogue one-shot, then respawn resets the brutes' alert state.
 - CTA: toast + `console.log`, URL unchanged.
-- ZIP: `index.html` at root, 272 KB (5.4% of the budget).
+- ZIP: `index.html` at root, about 2.45 MB (49% of the 5,000,000-byte budget), checked by `npm run zip`.
 
 **Untested / known limitations**
-- Real touch devices not tested yet (iOS Safari audio unlock, multi-touch joystick + button, safe areas).
+- Android not tested (no device available); touch was only tested on an iPhone.
 - Characters are KayKit CC0 models recoloured toward `concept-art/`. They're chibi stand-ins; custom models built from the concept sheets need more time and budget.
 - Bats are still procedural (no bat model in the packs used).
 - Combat clips come from a different rig (Skeletons 1.0), so a few poses are approximate on the heroes.
 - Landscape is handled with a rotate prompt, not an adapted landscape layout.
 - Music and sound effects are synthesised (simple chiptune-style timbres), not recorded instruments.
-- Balancing was tuned by playtesting on desktop only.
+- Balancing was tuned by playtesting on desktop and one iPhone.
 
 ## Credits & tools
 
 - Three.js (MIT): rendering. Vite + TypeScript: build. fflate (MIT): zip packaging script (build-time only).
 - Fox artwork: Simula's Scrambly reference kit (supplied for the assessment).
 - 3D characters and weapons: **KayKit by Kay Lousberg** (www.kaylousberg.com), CC0: [Adventurers 2.0](https://kaylousberg.itch.io/kaykit-adventurers) (free tier) and [Skeletons 1.0](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0). glTF-Transform + meshoptimizer (MIT) for the build-time model pipeline.
-- Icons: hand-written inline SVG. Sound effects: procedurally synthesised (no samples).
-- AI: built with Claude Code (Anthropic) as a pair programmer. _Fill in: what you prompted, accepted, rejected and changed yourself._
+- Hero concept art (`concept-art/`): generated with GPT Image 2 (OpenAI), reference only.
+- Icons: hand-written inline SVG. Sound effects and music: procedurally synthesised (no samples); the theme is original.
+## Time, tools and AI use
 
-**Corrections made during development** (examples for the AI note):
+**Time spent:** about 3 hours (Stage 1).
+
+**Tools**
+- **Claude Code (Claude Opus 5.5)** for planning and implementation. I started in plan mode: requirements checklist from the brief, then a scoped plan (4 stages × ~30–45 s, shared systems, build order with a cut line) that I approved before any code.
+- **GPT Image 2** for the hero concept sheets in `concept-art/`.
+- **Meshy** (meshy.ai) for turning the concepts into 3D characters. I tried it first, but it was paid, so I dropped it. With more time and budget I would model the characters myself from the concept sheets. Instead I used the free CC0 **KayKit Adventurers** and **Skeletons** packs, recoloured toward the concepts.
+
+**My part:** I defined the concept (four heroes, each with a unique challenge), the art direction and the stage themes. After every round of prompts I reviewed the code and playtested manually, then asked for specific improvements.
+
+**Changes I asked for after reviewing and playtesting:**
+- Warrior was too easy: more skeletons, a cavern setting, and a fire-spin special.
+- Mage: castle setting, a big-fireball special, only skeleton mages with dark magic (sword skeletons made no sense there).
+- Archer: first bats too fast, then the stage too hard, so I asked for a frost special (3 freezing arrows). It was later tuned back up with more bats and a rune order that reshuffles after a mistake.
+- Rogue was too easy: brutes 20–30% harder. They now move faster, pause randomly and turn back mid-route.
+- UI: the special button's label was unreadable (overlapped by Attack). Visual: a glitch on the Mage bridge.
+- Characters: use the KayKit models, matched to my concept colours. Background music in a pirate-adventure style, written original to avoid copyright.
+
+**Corrections and rejected first attempts** (caught during review and playtesting):
 - The first camera framing hid the hero behind the near wall in the Mage stage, so camera-side walls were made low.
 - In the Archer stage, the levers and the rune sequence were off-screen on a portrait phone. The courtyard was narrowed and a rune-order strip was added to the HUD.
 - In the Rogue stage, the outpost was too wide to read the brutes' vision cones, so it was narrowed to fit the view.
@@ -160,7 +179,7 @@ From the [assessment brief](https://simula-ad.notion.site/Simula-Playable-Game-D
 
 ### Timeline
 - [ ] Stage 1 submitted within **5 calendar days**
-- [ ] Stage 1 work time **4–6 hours** (6 h hard max). Note anything unfinished or untested
+- [x] Stage 1 work time **4–6 hours** (6 h hard max): about 3 h so far. Note anything unfinished or untested
 - [ ] (If invited) Stage 2 within **3 calendar days**, **1–2 hours**
 
 ### Brief
@@ -174,9 +193,9 @@ From the [assessment brief](https://simula-ad.notion.site/Simula-Playable-Game-D
 ### Stage 1 playable
 - [x] Interaction understandable and responsive (intro cards, telegraphs, auto-aim, feedback)
 - [x] Purposeful progression with a clear ending
-- [x] Touch and mouse on mobile-sized screens (touch verified on emulated sizes only; real device pending)
+- [x] Touch and mouse on mobile-sized screens (touch verified on a real iPhone)
 - [x] Review-friendly restart (pause menu, clear card, hub, redeem screen)
-- [ ] Project note on AI/tool use with one decision, correction or rejected output (draft above; personal parts to fill in)
+- [x] Project note on AI/tool use with decisions, corrections and rejected outputs (see *Time, tools and AI use*)
 
 ### Technical
 1. - [x] Production ZIP: `index.html` at root, runnable build, readable source, libraries, assets, run instructions
@@ -186,7 +205,7 @@ From the [assessment brief](https://simula-ad.notion.site/Simula-Playable-Game-D
 5. - [x] CTA: local confirmation + console log, no navigation
 6. - [x] Pause gameplay and clocks while hidden, resume without jumps; audio after interaction, mute, silent while hidden
 7. - [x] Resize, interrupted input, all outcomes (win, death, fall, wrong rune, spotted); clean restart
-8. - [x] Handoff: run instructions, tested browsers/devices (real/emulated), limitations, untested behaviour. Real-device row still to fill in
+8. - [x] Handoff: run instructions, tested browsers/devices (real/emulated, including a real iPhone), limitations, untested behaviour
 
 ### Deliverables
 - [ ] Production ZIP (`npm run release` → `release/scrambly-hero-quest.zip`)
