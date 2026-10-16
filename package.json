@@ -1,0 +1,26 @@
+{
+  "name": "scrambly-hero-quest",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "zip": "node scripts/zip.mjs",
+    "release": "npm run build && npm run zip"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.1.1",
+    "@gltf-transform/extensions": "^4.1.1",
+    "@gltf-transform/functions": "^4.1.1",
+    "@types/three": "^0.170.0",
+    "fflate": "^0.8.2",
+    "meshoptimizer": "^0.22.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.3.5"
+  }
+}

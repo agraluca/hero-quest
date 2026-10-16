@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- Dev-only: side view of every character cycling each action clip (not in the build).
+     http://localhost:5199/test/anims.html?action=swing  (none|swing|spin|cast|castBig|shoot|stab|roll|windup|death) -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Anim viewer</title>
+    <style>
+      body { margin: 0; background: #201338; color: #fff; font: 13px system-ui; }
+      #bar { position: fixed; top: 8px; left: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+      button { padding: 6px 10px; border-radius: 8px; border: 0; background: #7845d8; color: #fff; cursor: pointer; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="bar"></div>
+    <script type="module">
+      import * as THREE from 'three';
+      import { loadModels, makeHeroRig, makeEnemyRig } from '/src/game/models.ts';
+      await loadModels(undefined, '/models/');
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(devicePixelRatio);
+      document.body.append(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x2e1d4f);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x4a3a80, 1.6));
+      const sun = new THREE.DirectionalLight(0xfff4e8, 1.7);
+      sun.position.set(5, 12, 7);
+      scene.add(sun);
+      const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 100);
+      cam.position.set(0, 3.2, 15);
+      cam.lookAt(0, 1.2, 0);
+      const rigs = [
+        ...['warrior', 'mage', 'archer', 'rogue'].map((k) => makeHeroRig(k)),
+        ...['skeleton', 'captain', 'caster', 'warlock', 'brute'].map((k) => makeEnemyRig(k)),
+      ];
+      window.__rigs = rigs;
+      rigs.forEach((r, i) => {
+        r.root.position.x = (i - (rigs.length - 1) / 2) * 2.2;
+        r.root.rotation.y = 0.9;
+        scene.add(r.root);
+      });
+      let action = new URLSearchParams(location.search).get('action') ?? 'none';
+      const bar = document.getElementById('bar');
+      for (const a of ['none', 'run', 'swing', 'spin', 'cast', 'castBig', 'shoot', 'stab', 'roll', 'windup', 'death']) {
+        const b = document.createElement('button');
+        b.textContent = a;
+        b.onclick = () => (action = a);
+        bar.append(b);
+      }
+      let last = performance.now();
+      let t = 0;
+      window.__setT = (v) => (window.__fixedT = v);
+      renderer.setAnimationLoop((now) => {
+        const dt = (now - last) / 1000;
+        last = now;
+        t = window.__fixedT ?? (t + dt * 0.6) % 1;
+        for (const r of rigs) {
+          r.update(dt, {
+            speed: action === 'run' ? 1 : 0,
+            action: ['none', 'run', 'death'].includes(action) ? 'none' : action,
+            t,
+            dead: action === 'death' ? t : 0,
+          });
+        }
+        renderer.render(scene, cam);
+      });
+    </script>
+  </body>
+</html>

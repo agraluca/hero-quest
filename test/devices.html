@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- Dev-only test harness (not part of the production build):
+     shows the game at the brief's required CSS sizes side by side.
+     Open http://localhost:5199/test/devices.html while `npm run dev` runs. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Device sizes</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #111; color: #ccc; font: 13px system-ui; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+      figure { margin: 0; }
+      figcaption { margin-bottom: 6px; }
+      iframe { border: 0; display: block; background: #000; }
+    </style>
+  </head>
+  <body>
+    <figure><figcaption>320 × 568 portrait</figcaption><iframe id="p320" src="/" width="320" height="568"></iframe></figure>
+    <figure><figcaption>390 × 844 portrait</figcaption><iframe id="p390" src="/" width="390" height="844"></iframe></figure>
+    <figure><figcaption>568 × 320 landscape (rotate prompt)</figcaption><iframe id="l568" src="/" width="568" height="320"></iframe></figure>
+    <script>
+      // ?stage=N on this page is forwarded to every frame
+      const q = location.search;
+      if (q) for (const f of document.querySelectorAll('iframe')) f.src = '/' + q;
+    </script>
+  </body>
+</html>
