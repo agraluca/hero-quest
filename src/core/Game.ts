@@ -504,6 +504,9 @@ export class Game implements StageHost {
       get gameTime() {
         return game.clock.time;
       },
+      get audio() {
+        return game.audio.state;
+      },
     };
   }
 }

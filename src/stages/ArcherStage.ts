@@ -27,6 +27,16 @@ const RUNES: Rune[] = [
 
 markShared(...RUNES.map((r) => r.geo));
 
+/** Fisher–Yates shuffle of the three rune ids */
+function shuffled(): number[] {
+  const a = [0, 1, 2];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 const SHIELD_R = 1.35;
 const SHIELD_ARC = Math.PI * 1.5; // the gap is the remaining quarter
 const SHIELD_SPEED = (Math.PI * 2) / 3.6;
@@ -93,12 +103,13 @@ export class ArcherStage extends BaseStage {
   private sequence: number[] = [];
   private progress = 0;
   private slots: THREE.MeshBasicMaterial[] = [];
+  private slotIcons: THREE.Mesh[] = [];
   private shield!: THREE.Mesh;
   private shieldCenter = new THREE.Vector3(0, 0, -5);
   private gate!: THREE.Group;
   private gateBox!: Box;
   private gateOpenT = -1;
-  private maxBats = 1;
+  private maxBats = 2;
   private shieldFrozenT = 0;
   private shieldMat!: THREE.MeshBasicMaterial;
 
@@ -152,8 +163,8 @@ export class ArcherStage extends BaseStage {
     this.gate.add(cross);
     r.add(this.gate);
 
-    // the rune sequence (randomised every run), carved on the lintel stone
-    this.sequence = [0, 1, 2].sort(() => Math.random() - 0.5);
+    // the rune sequence (random every run, reshuffled after every mistake), carved on the lintel stone
+    this.sequence = shuffled();
     const panel = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.3, 0.6), toon(0x77778a));
     panel.position.set(0, 3.25, -9.1);
     const moss = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.22, 0.65), toon(0x4a8a42));
@@ -166,6 +177,7 @@ export class ArcherStage extends BaseStage {
       icon.scale.setScalar(1.1);
       r.add(icon);
       this.slots.push(m);
+      this.slotIcons.push(icon);
       // small step arrows between slots
       if (i < 2) {
         const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 3), glow(0xfff6e8));
@@ -219,8 +231,8 @@ export class ArcherStage extends BaseStage {
 
     this.spawnPoint.set(0, 0, 5.5);
     this.exit = new Portal(r, new THREE.Vector3(0, 0, -11.2));
-    this.sched.after(6, () => this.spawnBat(1));
-    this.sched.every(8, () => {
+    this.sched.after(4, () => this.spawnBat(2));
+    this.sched.every(6, () => {
       if (this.aliveBats() < this.maxBats && !this.exit?.isOpen) this.spawnBat(1);
     });
   }
@@ -269,12 +281,21 @@ export class ArcherStage extends BaseStage {
     } else {
       this.host.audio.play('wrong');
       this.host.floatText(l.pos, 'Wrong rune!', 'bad');
-      this.host.banner('Wrong order!', 'The runes reset and the bats wake up');
+      this.host.banner('Wrong order!', 'The runes reshuffle and the bats wake up');
       this.fx.burst(l.pos, 0xff5a6a, 14, 3, { y: 1.35 });
       this.progress = 0;
       for (const lv of this.levers) lv.setLit(false);
-      for (const s of this.slots) s.opacity = 0.45;
-      this.maxBats = Math.min(this.maxBats + 1, 3);
+      // a fresh order (never the same one twice in a row), so guessing doesn't pay
+      const old = this.sequence.join();
+      do this.sequence = shuffled();
+      while (this.sequence.join() === old);
+      this.sequence.forEach((rune, i) => {
+        this.slotIcons[i].geometry = RUNES[rune].geo;
+        this.slots[i].color.set(RUNES[rune].color);
+        this.slots[i].opacity = 0.45;
+        this.fx.burst(this.slotIcons[i].position, RUNES[rune].color, 6, 2, { y: 3.25 });
+      });
+      this.maxBats = Math.min(this.maxBats + 1, 4);
       this.spawnBat(1);
     }
   }

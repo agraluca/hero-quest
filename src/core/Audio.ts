@@ -24,6 +24,8 @@ export type Sfx =
   | 'bridge'
   | 'chest';
 
+import { Music } from './Music';
+
 const MUTE_KEY = 'scrambly-hero-quest-muted';
 
 export class Audio {
@@ -31,6 +33,7 @@ export class Audio {
   private master: GainNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
   private hidden = false;
+  private music: Music | null = null;
   muted = false;
 
   constructor() {
@@ -57,6 +60,15 @@ export class Audio {
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const data = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    // background theme: low volume under the SFX, shares the master gain (mute) and the
+    // context (suspended while hidden)
+    this.music = new Music(this.ctx, this.master, this.noiseBuf, 0.16);
+    this.music.start();
+  }
+
+  /** for window.__debug */
+  get state(): { context: string; music: boolean; muted: boolean } {
+    return { context: this.ctx?.state ?? 'not-created', music: this.music !== null, muted: this.muted };
   }
 
   setMuted(m: boolean): void {

@@ -31,7 +31,7 @@ const SPECS: Record<EnemyKind, EnemySpec> = {
   caster: { hp: 2, speed: 1.2, radius: 0.4, coins: 2, reach: 0, damage: 1 },
   warlock: { hp: 7, speed: 0.8, radius: 0.6, coins: 8, reach: 0, damage: 1 },
   bat: { hp: 1, speed: 3.5, radius: 0.45, coins: 1, reach: 0.9, damage: 1 },
-  brute: { hp: 99, speed: 1.9, radius: 0.7, coins: 6, reach: 1.5, damage: 99 },
+  brute: { hp: 99, speed: 2.3, radius: 0.7, coins: 6, reach: 1.5, damage: 99 },
 };
 
 export type EnemyState =
@@ -74,6 +74,9 @@ export class Enemy {
   route: THREE.Vector3[] = [];
   routeIdx = 0;
   readonly lastSeen = new THREE.Vector3();
+  /** brute: direction it was facing when it stopped to look around */
+  private lookBase = 0;
+  private lookPhase = Math.random() * Math.PI * 2;
   lostT = 0;
   /** caster: time until next shot */
   castTimer = 2 + Math.random() * 2;
@@ -351,7 +354,11 @@ export class Enemy {
           const dz = target.z - this.pos.z;
           if (Math.hypot(dx, dz) < 0.3) {
             this.routeIdx = (this.routeIdx + 1) % this.route.length;
-            this.setState('idle', 1.1); // look around at each waypoint
+            this.lookAround(0.6 + Math.random() * 1.4); // unpredictable pause at each waypoint
+          } else if (Math.random() < dt * 0.14) {
+            // now and then (about every 7 s) turn back mid-route, so patrols can't be timed
+            this.routeIdx = (this.routeIdx - 1 + this.route.length) % this.route.length;
+            this.lookAround(0.35 + Math.random() * 0.5);
           } else {
             this.facing = approachAngle(this.facing, yawTo(dx, dz), dt * 3);
             moveSpeed = this.spec.speed;
@@ -361,6 +368,9 @@ export class Enemy {
         break;
       }
       case 'idle':
+        // sweep the vision cone left and right while standing
+        this.lookPhase += dt * 3.2;
+        this.facing = approachAngle(this.facing, this.lookBase + Math.sin(this.lookPhase) * 0.9, dt * 4);
         if (sees) this.alert(w);
         else if (this.stateT <= 0) this.setState('patrol');
         break;
@@ -379,7 +389,7 @@ export class Enemy {
           const dx = this.lastSeen.x - this.pos.x;
           const dz = this.lastSeen.z - this.pos.z;
           this.facing = approachAngle(this.facing, yawTo(dx, dz), dt * 7);
-          moveSpeed = 7.2;
+          moveSpeed = 8;
           if (heroAvailable && !hero.invisible && dist < this.spec.reach) {
             this.setState('smash', 0.28);
           } else if (Math.hypot(dx, dz) < 0.5 || this.lostT > 1.6) {
@@ -414,6 +424,12 @@ export class Enemy {
       this.alertMark.position.y = 3.3 + Math.sin(performance.now() * 0.015) * 0.1;
     }
     return { moveSpeed, moveDir };
+  }
+
+  private lookAround(seconds: number): void {
+    this.lookBase = this.facing;
+    this.lookPhase = 0;
+    this.setState('idle', seconds);
   }
 
   canSee(w: EnemyWorld, dist: number, heroAngle: number): boolean {

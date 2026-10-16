@@ -48,8 +48,8 @@ Attacks auto-aim at the target in the direction you face, so it plays one-handed
 |---|---|---|---|
 | 1 | Warrior | **Bone Cavern**: skeleton hordes pour out of cave mouths in 3 escalating waves (6 → 8 + captain → 10 + 2 captains). Red wind-ups telegraph hits. **Fire Spin** is a blazing whirl that burns everything around you, with brief invulnerability. | All waves cleared → portal |
 | 2 | Fire Mage | **Castle Chasm**: skeleton dark mages and a warlock (3-orb dark fan) hold the keep across a chasm. Fireballs pick them off; **Inferno** is a big charged fireball with a huge blast. A last rank rises near the end. Falling in costs a heart. | Keep cleared → drawbridge rises → portal |
-| 3 | Archer | **Rune Forest**: shoot 3 rune stones in the order carved on the forest gate (randomised each run, also shown in the HUD). One rune sits inside a rotating shield, so the shot must go through the gap. A wrong rune resets the puzzle and wakes another bat. Bats swoop slowly and interrupt the bow draw. **Frost Volley** fires 3 ice arrows that freeze bats in mid-air (the next hit shatters them) and can **freeze the spinning shield** so the hidden rune is easy to hit. | Correct order → gate opens → portal |
-| 4 | Rogue | **Orc War Camp** (night): 3 fast brutes patrol between crates and carts with visible vision cones; cover blocks their sight. Strike from **behind** = instant takedown; from the **front** or caught = one-hit KO. **Vanish** gives 3.5 s of invisibility and breaks a chase. | All brutes down → portal |
+| 3 | Archer | **Rune Forest**: shoot 3 rune stones in the order carved on the forest gate (randomised each run, also shown in the HUD). One rune sits inside a rotating shield, so the shot must go through the gap. A wrong rune resets the puzzle, **reshuffles the order**, and wakes another bat (up to 4). Bats swoop slowly and interrupt the bow draw. **Frost Volley** fires 3 ice arrows that freeze bats in mid-air (the next hit shatters them) and can **freeze the spinning shield** so the hidden rune is easy to hit. | Correct order → gate opens → portal |
+| 4 | Rogue | **Orc War Camp** (night): 3 fast brutes patrol between crates and carts with visible vision cones; cover blocks their sight. Patrols are unpredictable: random pauses with a sweeping look-around, and occasional mid-route turn-backs. Strike from **behind** = instant takedown; from the **front** or caught = one-hit KO. **Vanish** gives 3.5 s of invisibility and breaks a chase. | All brutes down → portal |
 
 After each clear: a bonus of demo coins, then a new game unlocks on Discover. After all four: Redeem chest → coin burst → reward card → **Explore Scrambly** CTA (shows "CTA clicked: demo only", logs to the console, no navigation) → Play again.
 
@@ -66,7 +66,7 @@ The game's structure follows Scrambly's loop:
 
 ## Tech & structure
 
-Three.js 0.170 + TypeScript + Vite. One JS bundle (~195 KB gzipped). Sound effects are synthesised with WebAudio at runtime, so **no audio files** ship.
+Three.js 0.170 + TypeScript + Vite. One JS bundle (~195 KB gzipped). Sound effects and the background music are synthesised with WebAudio at runtime, so **no audio files** ship. The music, *Salt & Steel* (`src/core/Music.ts`), is an original sea-shanty loop written for this game: D minor, 6/8, low volume, scheduled on the AudioContext clock so it stops while the page is hidden. It starts on the first tap and follows the mute button.
 
 **Characters** are KayKit models (CC0), about 1.8 MB in total under `/models`:
 - Heroes: Knight, Mage, Ranger and Rogue from *Adventurers 2.0*.
@@ -134,7 +134,7 @@ test/anims.html           dev-only side view of every character × action clip
 - Bats are still procedural (no bat model in the packs used).
 - Combat clips come from a different rig (Skeletons 1.0), so a few poses are approximate on the heroes.
 - Landscape is handled with a rotate prompt, not an adapted landscape layout.
-- No music; sound effects only.
+- Music and sound effects are synthesised (simple chiptune-style timbres), not recorded instruments.
 - Balancing was tuned by playtesting on desktop only.
 
 ## Credits & tools
