@@ -261,23 +261,19 @@ export class UI {
     (el.querySelector('.back') as HTMLButtonElement).onclick = onBack;
   }
 
-  showPause(on: { resume(): void; restartStage(): void; hub(): void; restartAll(): void; mute(): void }, muted: boolean): void {
+  showPause(on: { resume(): void; restart(): void; mute(): void }, muted: boolean): void {
     const el = this.modal(`
       <span class="eyebrow">Paused</span>
       <h2>Take a breather</h2>
       <div class="stack">
         <button class="btn resume">${ICONS.play} Resume</button>
-        <button class="btn purple restart">${ICONS.restart} Restart this game</button>
-        <button class="btn ghost hub">Back to Discover</button>
+        <button class="btn purple restart">${ICONS.restart} Restart</button>
         <button class="btn ghost mute">${muted ? ICONS.soundOff + ' Sound off' : ICONS.soundOn + ' Sound on'}</button>
-        <button class="btn ghost all">Restart everything</button>
       </div>`);
     const b = (s: string) => el.querySelector(s) as HTMLButtonElement;
     b('.resume').onclick = on.resume;
-    b('.restart').onclick = on.restartStage;
-    b('.hub').onclick = on.hub;
+    b('.restart').onclick = on.restart;
     b('.mute').onclick = on.mute;
-    b('.all').onclick = on.restartAll;
   }
 
   showClear(info: StageInfo, earned: number, isLast: boolean, onContinue: () => void, onReplay: () => void): void {
@@ -295,7 +291,7 @@ export class UI {
     (el.querySelector('.replay') as HTMLButtonElement).onclick = onReplay;
   }
 
-  showRedeem(total: number, on: { cta(): void; restart(): void; hub(): void }, audio: { chest(): void }): void {
+  showRedeem(total: number, on: { cta(): void; restart(): void }, audio: { chest(): void }): void {
     const el = h(
       'div',
       'screen redeem',

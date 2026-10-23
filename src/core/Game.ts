@@ -10,15 +10,17 @@ import { Clock, Scheduler } from './Clock';
 import { Disposer } from './Disposer';
 import { Input } from './Input';
 
-type Mode = 'title' | 'hub' | 'intro' | 'play' | 'clear' | 'redeem';
+type Mode = 'play' | 'end';
+
+/** The one level this playable runs (Bone Cavern). */
+const STAGE = STAGES[0];
 
 const VFOV = 42;
 const ELEVATION = THREE.MathUtils.degToRad(54);
 
 /**
- * The game shell: renderer, camera, flow between screens, persistence-free
- * progress (cleared stages + demo balance), pause/visibility/rotate handling
- * and clean restarts.
+ * The game shell: renderer, camera, flow (play → reward chest → CTA),
+ * demo balance, pause/visibility/rotate handling and clean restarts.
  */
 export class Game implements StageHost {
   readonly audio = new Audio();
@@ -31,13 +33,9 @@ export class Game implements StageHost {
   /** shell-level game-time timers (cleared on every restart) */
   private sched = new Scheduler();
   private d = new Disposer();
-  private mode: Mode = 'title';
+  private mode: Mode = 'play';
   private stage: BaseStage | null = null;
-  private stageIndex = -1;
-  private cleared = [false, false, false, false];
   private coins = 0;
-  private coinsAtStageStart = 0;
-  private redeemed = false;
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private lastFrame = 0;
@@ -94,21 +92,9 @@ export class Game implements StageHost {
   }
 
   start(): void {
-    const param = Number(new URLSearchParams(location.search).get('stage'));
-    if (param >= 1 && param <= STAGES.length) {
-      // review helper: ?stage=N unlocks earlier stages and jumps straight in
-      for (let i = 0; i < param - 1; i++) this.cleared[i] = true;
-      this.ui.showTitle(() => {
-        this.audio.play('tap');
-        this.openIntro(param - 1);
-      });
-    } else {
-      this.ui.showTitle(() => {
-        this.audio.play('tap');
-        this.showHub();
-      });
-    }
-    this.mode = 'title';
+    // no title, hub or intro: the playable opens straight into the level
+    this.loadStage();
+    this.beginPlay();
     const loop = (now: number) => {
       requestAnimationFrame(loop);
       this.frame(now);
@@ -118,57 +104,9 @@ export class Game implements StageHost {
 
   // ------------------------------------------------------------ flow
 
-  private showHub(): void {
+  private loadStage(): void {
     this.disposeStage();
-    this.mode = 'hub';
-    this.ui.closeModal();
-    this.ui.hideHud();
-    this.backdrop.visible = true;
-    this.ui.showHub(
-      { cleared: this.cleared, coins: this.coins, redeemed: this.redeemed, muted: this.audio.muted },
-      {
-        play: (i) => {
-          this.audio.play('tap');
-          this.openIntro(i);
-        },
-        redeem: () => {
-          this.audio.play('tap');
-          this.showRedeem();
-        },
-        restart: () => this.restartAll(),
-        mute: () => {
-          this.toggleMute();
-          this.showHub();
-        },
-      },
-      STAGES,
-    );
-  }
-
-  private openIntro(i: number): void {
-    this.loadStage(i);
-    this.mode = 'intro';
-    this.clock.pause('modal');
-    this.ui.clearScreen();
-    this.ui.showIntro(
-      STAGES[i],
-      i,
-      () => {
-        this.audio.play('tap');
-        this.beginPlay();
-      },
-      () => {
-        this.audio.play('tap');
-        this.showHub();
-      },
-    );
-  }
-
-  private loadStage(i: number): void {
-    this.disposeStage();
-    this.stageIndex = i;
-    this.coinsAtStageStart = this.coins;
-    const stage = STAGES[i].create(this);
+    const stage = STAGE.create(this);
     stage.init();
     this.scene.add(stage.root);
     this.stage = stage;
@@ -185,7 +123,7 @@ export class Game implements StageHost {
     this.clock.resume('modal');
     this.clock.resume('menu');
     this.input.setEnabled(true);
-    this.banner(STAGES[this.stageIndex].title, `${STAGES[this.stageIndex].heroName}: go!`);
+    this.banner(STAGE.title, `${STAGE.heroName}: go!`);
   }
 
   private openPause(): void {
@@ -201,9 +139,7 @@ export class Game implements StageHost {
           this.clock.resume('menu');
           this.input.setEnabled(true);
         },
-        restartStage: () => this.restartStage(),
-        hub: () => this.showHub(),
-        restartAll: () => this.restartAll(),
+        restart: () => this.restartRun(),
         mute: () => {
           this.toggleMute();
           this.ui.closeModal();
@@ -215,78 +151,42 @@ export class Game implements StageHost {
     );
   }
 
-  private restartStage(): void {
-    const i = this.stageIndex;
-    // undo coins collected during the abandoned attempt
-    this.coins = this.coinsAtStageStart;
+  /** Fresh run from zero coins, straight back into play. */
+  private restartRun(): void {
+    this.audio.play('tap');
+    this.coins = 0;
     this.ui.clearFx();
-    this.loadStage(i);
+    this.ui.clearScreen();
+    this.loadStage();
     this.beginPlay();
   }
 
-  private restartAll(): void {
-    this.disposeStage();
-    this.sched.clear();
-    this.ui.clearFx();
-    this.cleared = [false, false, false, false];
-    this.coins = 0;
-    this.redeemed = false;
-    this.ui.setBalance(0, false);
-    this.audio.play('tap');
-    this.showHub();
-  }
-
   stageCleared(): void {
-    const i = this.stageIndex;
-    const info = STAGES[i];
-    this.cleared[i] = true;
-    this.coins += info.bonus;
+    this.coins += STAGE.bonus;
     this.ui.setBalance(this.coins);
-    const earned = this.coins - this.coinsAtStageStart;
     this.input.setEnabled(false);
-    this.banner('Cleared!', `+${info.bonus} bonus demo coins`);
-    this.sched.after(1.3, () => {
-      this.mode = 'clear';
-      const isLast = this.cleared.every(Boolean);
-      this.ui.showClear(
-        info,
-        earned,
-        isLast,
-        () => {
-          this.audio.play('tap');
-          if (isLast) this.showRedeem();
-          else this.showHub();
-        },
-        () => {
-          this.audio.play('tap');
-          this.coinsAtStageStart = this.coins;
-          this.loadStage(i);
-          this.beginPlay();
-        },
-      );
-    });
+    this.banner('Victory!', `+${STAGE.bonus} bonus demo coins`);
+    this.sched.after(1.3, () => this.showRedeem());
   }
 
   private showRedeem(): void {
     this.disposeStage();
-    this.mode = 'redeem';
+    this.mode = 'end';
     this.ui.closeModal();
     this.ui.hideHud();
     this.backdrop.visible = true;
-    this.redeemed = true;
     this.ui.showRedeem(
       this.coins,
-      {
-        cta: () => {
-          this.audio.play('tap');
-          console.log('[CTA] Explore Scrambly clicked (demo only, no navigation)');
-          this.ui.toast('CTA clicked: demo only');
-        },
-        restart: () => this.restartAll(),
-        hub: () => this.showHub(),
-      },
+      { cta: () => this.cta(), restart: () => this.restartRun() },
       { chest: () => this.audio.play('chest') },
     );
+  }
+
+  /** Simulated CTA: local confirmation + console log, no navigation. */
+  private cta(): void {
+    this.audio.play('tap');
+    console.log('[CTA] Explore Scrambly clicked (demo only, no navigation)');
+    this.ui.toast('CTA clicked: demo only');
   }
 
   private disposeStage(): void {
