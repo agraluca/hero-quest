@@ -61,7 +61,7 @@ export class UI {
           <button class="icon-btn pause" aria-label="Pause">${ICONS.pause}</button>
         </div>
       </div>
-      <div class="keys-hint">WASD / arrows · Space attack · Shift special</div>`;
+      <div class="keys-hint">WASD / arrows or drag to move · attacks are automatic</div>`;
     const q = <T extends HTMLElement>(s: string) => this.hud.querySelector(s) as T;
     this.controls = {
       zone: q('.stick-zone'),
@@ -76,6 +76,8 @@ export class UI {
     this.cdRing = q('.act.alt .cd');
     this.extra = q('.hud-extra');
     q<HTMLButtonElement>('.pause').onclick = () => this.onPause();
+    // one-touch playable: attacks and the special fire automatically
+    q('.actions').classList.add('hidden');
     if (matchMedia('(pointer: coarse)').matches) q('.keys-hint').classList.add('hidden');
 
     root.append(this.screen, this.hud, this.fxLayer, this.modalLayer);

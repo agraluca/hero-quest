@@ -54,6 +54,12 @@ export interface Target {
   onHit(p: Projectile): void;
 }
 
+/** warrior swing reach (plus the enemy's radius) */
+const SWING_REACH = 2.1;
+/** fire spin radius: auto-cast when this many skeletons crowd in */
+const SPIN_REACH = 2.6;
+const SPIN_CROWD = 3;
+
 const tmpV = new THREE.Vector3();
 const tmpF = new THREE.Vector3();
 
@@ -94,6 +100,8 @@ export abstract class BaseStage implements EnemyWorld {
   private fallV = 0;
   private spinHitT = 0;
   private spinRing: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial> | null = null;
+  /** faint circle under the hero: anything inside it gets hit automatically */
+  private reachRing: THREE.Mesh | null = null;
   private handledDead = new Set<Enemy>();
 
   constructor(
@@ -128,6 +136,15 @@ export abstract class BaseStage implements EnemyWorld {
     this.hero.respawn(this.spawnPoint, this.spawnFacing);
     this.hero.invulnT = 0;
     this.hero.syncVisual(0);
+    if (this.hero.spec.kind === 'warrior') {
+      this.reachRing = new THREE.Mesh(
+        new THREE.RingGeometry(SWING_REACH + 0.25, SWING_REACH + 0.4, 48),
+        new THREE.MeshBasicMaterial({ color: 0xfff6e8, transparent: true, opacity: 0.22, depthWrite: false }),
+      );
+      this.reachRing.rotation.x = -Math.PI / 2;
+      this.reachRing.renderOrder = -1;
+      this.root.add(this.reachRing);
+    }
   }
 
   addEnemy(kind: EnemyKind, x: number, z: number, facing = 0): Enemy {
@@ -173,8 +190,17 @@ export abstract class BaseStage implements EnemyWorld {
     const h = this.hero;
     const input = this.host.input;
     h.tick(dt);
-    const wantMain = input.takeMain() || input.mainHeld;
-    const wantAlt = input.takeAlt();
+    // one-touch controls: the player only moves; attacks and the special fire on their own
+    input.takeMain();
+    input.takeAlt();
+    const near = this.enemiesWithin(SWING_REACH);
+    const crowd = this.enemiesWithin(SPIN_REACH);
+    const wantMain = near > 0;
+    const wantAlt = crowd >= SPIN_CROWD || (h.hp <= 2 && crowd > 0);
+    if (this.reachRing) {
+      this.reachRing.position.set(h.pos.x, 0.05, h.pos.z);
+      this.reachRing.visible = !h.dead && !h.falling && !this.done;
+    }
 
     if (h.dead) {
       // knocked out = run over: let the fall animation play, then hand over to the fail card
@@ -244,6 +270,16 @@ export abstract class BaseStage implements EnemyWorld {
 
   // ------------------------------------------------------------ hero combat
 
+  /** Targetable enemies within `reach` (+ their radius) of the hero. */
+  private enemiesWithin(reach: number): number {
+    const h = this.hero;
+    let n = 0;
+    for (const e of this.enemies) {
+      if (e.targetable && Math.hypot(e.pos.x - h.pos.x, e.pos.z - h.pos.z) <= reach + e.spec.radius) n++;
+    }
+    return n;
+  }
+
   /** Best target in a cone around the hero's facing; null if none. */
   protected autoAim(range: number, halfCone: number, withTargets: boolean): THREE.Vector3 | null {
     const h = this.hero;
@@ -278,7 +314,8 @@ export abstract class BaseStage implements EnemyWorld {
     h.attackCd = h.spec.attackCd;
     switch (kind) {
       case 'warrior': {
-        this.faceTowards(this.autoAim(3.2, Math.PI * 0.75, false));
+        // full circle: auto-attacks turn to whatever is closest
+        this.faceTowards(this.autoAim(3.2, Math.PI, false));
         h.startAction('swing', 0.3);
         this.host.audio.play('swing');
         let hits = 0;
@@ -403,6 +440,7 @@ export abstract class BaseStage implements EnemyWorld {
       this.spinHitT = 0;
       this.host.audio.play('swing');
       this.host.audio.play('fireball');
+      this.host.floatText(h.pos, 'FIRE SPIN!', 'good');
       this.fx.ring(h.pos, 0xf58324, 3.2, 0.5);
       return;
     }

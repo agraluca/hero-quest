@@ -13,7 +13,7 @@ const DEAD_ZONE = 0.18;
 
 /**
  * Unified touch / mouse / keyboard input.
- * - Floating joystick: press anywhere in the lower-left zone.
+ * - Floating joystick: press and drag anywhere on the play area.
  * - Main action supports hold-to-repeat; alt action is edge-triggered.
  * - Any interrupted pointer (cancel, lost capture, window blur) resets state,
  *   so the hero never keeps running after a finger slides off-screen.
@@ -198,7 +198,7 @@ export class Input {
     this.stickVec = { x: 0, y: 0 };
     this.el.knob.style.transform = '';
     this.el.stick.classList.add('idle');
-    // Resting position: bottom-left of the zone.
-    this.placeStick(84, Math.max(this.el.zone.clientHeight - 96, 70));
+    // Resting position: bottom-centre of the zone.
+    this.placeStick(this.el.zone.clientWidth / 2, Math.max(this.el.zone.clientHeight - 110, 70));
   }
 }

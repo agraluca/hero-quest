@@ -562,13 +562,10 @@ button {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-/* Controls */
+/* Controls: the whole play area is the joystick (the HUD top bar sits above it) */
 .stick-zone {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 60%;
-  height: 46%;
+  inset: 0;
   touch-action: none;
 }
 

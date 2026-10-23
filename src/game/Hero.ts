@@ -17,7 +17,7 @@ export interface HeroSpec {
 }
 
 export const HERO_SPECS: Record<HeroKind, HeroSpec> = {
-  warrior: { kind: 'warrior', name: 'Warrior', maxHp: 6, speed: 5.2, attackCd: 0.36, windup: 0, special: 'firespin', specialLabel: 'Fire Spin', specialCd: 4.5 },
+  warrior: { kind: 'warrior', name: 'Warrior', maxHp: 6, speed: 5.2, attackCd: 0.5, windup: 0, special: 'firespin', specialLabel: 'Fire Spin', specialCd: 4.5 },
   mage: { kind: 'mage', name: 'Fire Mage', maxHp: 5, speed: 4.8, attackCd: 0.5, windup: 0.2, special: 'inferno', specialLabel: 'Inferno', specialCd: 5 },
   archer: { kind: 'archer', name: 'Archer', maxHp: 6, speed: 5.0, attackCd: 0.4, windup: 0.22, special: 'frost', specialLabel: 'Frost Volley', specialCd: 4.5 },
   rogue: { kind: 'rogue', name: 'Rogue', maxHp: 1, speed: 5.4, attackCd: 0.35, windup: 0, special: 'vanish', specialLabel: 'Vanish', specialCd: 7 },
