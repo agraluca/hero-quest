@@ -42,13 +42,6 @@ export function glow(color: number, opacity = 1): THREE.MeshBasicMaterial {
   });
 }
 
-export const PALETTE = {
-  orange: 0xf58324,
-  purple: 0x7845d8,
-  ink: 0x201338,
-  white: 0xfff6e8,
-};
-
 // ---------------------------------------------------------------- disposal
 
 export function markShared(...items: object[]): void {

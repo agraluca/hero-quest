@@ -4,37 +4,31 @@ export interface InputElements {
   zone: HTMLElement;
   stick: HTMLElement;
   knob: HTMLElement;
-  main: HTMLElement;
-  alt: HTMLElement;
 }
 
 const STICK_RADIUS = 46;
 const DEAD_ZONE = 0.18;
 
 /**
- * Unified touch / mouse / keyboard input.
+ * Unified touch / mouse / keyboard movement (attacks are automatic).
  * - Floating joystick: press and drag anywhere on the play area.
- * - Main action supports hold-to-repeat; alt action is edge-triggered.
+ * - WASD / arrow keys.
  * - Any interrupted pointer (cancel, lost capture, window blur) resets state,
  *   so the hero never keeps running after a finger slides off-screen.
  */
 export class Input {
   /** movement in screen space, x right / y down, length 0..1 */
   readonly move = { x: 0, y: 0 };
-  mainHeld = false;
-  private mainEdge = false;
-  private altEdge = false;
 
   private stickId: number | null = null;
   private stickOrigin = { x: 0, y: 0 };
   private stickVec = { x: 0, y: 0 };
-  private mainId: number | null = null;
   private keys = new Set<string>();
   private d = new Disposer();
   private enabled = false;
 
   constructor(private el: InputElements) {
-    const { zone, main, alt } = el;
+    const { zone } = el;
 
     this.d.listen(zone, 'pointerdown', (e) => {
       if (!this.enabled || this.stickId !== null) return;
@@ -59,53 +53,11 @@ export class Input {
     this.d.listen(zone, 'pointercancel', endStick);
     this.d.listen(zone, 'lostpointercapture', endStick);
 
-    this.d.listen(main, 'pointerdown', (e) => {
-      if (!this.enabled) return;
-      e.preventDefault();
-      this.mainId = e.pointerId;
-      main.setPointerCapture(e.pointerId);
-      this.mainHeld = true;
-      this.mainEdge = true;
-      main.classList.add('pressed');
-    });
-    const endMain = (e: PointerEvent) => {
-      if (e.pointerId !== this.mainId) return;
-      this.mainId = null;
-      this.mainHeld = false;
-      main.classList.remove('pressed');
-    };
-    this.d.listen(main, 'pointerup', endMain);
-    this.d.listen(main, 'pointercancel', endMain);
-    this.d.listen(main, 'lostpointercapture', endMain);
-
-    this.d.listen(alt, 'pointerdown', (e) => {
-      if (!this.enabled) return;
-      e.preventDefault();
-      this.altEdge = true;
-      alt.classList.add('pressed');
-    });
-    const endAlt = () => alt.classList.remove('pressed');
-    this.d.listen(alt, 'pointerup', endAlt);
-    this.d.listen(alt, 'pointercancel', endAlt);
-    this.d.listen(alt, 'pointerleave', endAlt);
-
     this.d.listen(window, 'keydown', (e) => {
       if (!this.enabled || e.repeat) return;
-      const k = e.code;
-      this.keys.add(k);
-      if (k === 'Space' || k === 'KeyJ' || k === 'Enter') {
-        this.mainHeld = true;
-        this.mainEdge = true;
-        e.preventDefault();
-      }
-      if (k === 'ShiftLeft' || k === 'ShiftRight' || k === 'KeyK') this.altEdge = true;
+      this.keys.add(e.code);
     });
-    this.d.listen(window, 'keyup', (e) => {
-      this.keys.delete(e.code);
-      if ((e.code === 'Space' || e.code === 'KeyJ' || e.code === 'Enter') && this.mainId === null) {
-        this.mainHeld = false;
-      }
-    });
+    this.d.listen(window, 'keyup', (e) => this.keys.delete(e.code));
     this.d.listen(window, 'blur', () => this.reset());
     this.d.listen(document, 'visibilitychange', () => {
       if (document.hidden) this.reset();
@@ -117,19 +69,6 @@ export class Input {
   setEnabled(on: boolean): void {
     this.enabled = on;
     if (!on) this.reset();
-  }
-
-  /** Consume edge-triggered presses (call once per gameplay frame). */
-  takeMain(): boolean {
-    const v = this.mainEdge;
-    this.mainEdge = false;
-    return v;
-  }
-
-  takeAlt(): boolean {
-    const v = this.altEdge;
-    this.altEdge = false;
-    return v;
   }
 
   /** Called every frame: merges stick + keyboard into `move`. */
@@ -152,12 +91,6 @@ export class Input {
 
   reset(): void {
     this.keys.clear();
-    this.mainHeld = false;
-    this.mainEdge = false;
-    this.altEdge = false;
-    this.mainId = null;
-    this.el.main.classList.remove('pressed');
-    this.el.alt.classList.remove('pressed');
     this.resetStick();
   }
 

@@ -31,13 +31,8 @@ const ADV_ANIM = `${ADV}/Animations/gltf/Rig_Medium`;
 const ADV_ASSET = `${ADV}/Assets/gltf`;
 
 const MODELS = [
-  // ---- heroes: KayKit Adventurers 2.0 meshes (they ship without clips)
+  // ---- hero: KayKit Adventurers 2.0 Knight (ships without clips)
   { out: 'hero-knight', src: `${ADV_CHAR}/Knight.glb`, clips: {} },
-  { out: 'hero-mage', src: `${ADV_CHAR}/Mage.glb`, clips: {} },
-  { out: 'hero-ranger', src: `${ADV_CHAR}/Ranger.glb`, clips: {} },
-  { out: 'hero-rogue', src: `${ADV_CHAR}/Rogue.glb`, clips: {} },
-  { out: 'hero-rogue-hooded', src: `${ADV_CHAR}/Rogue_Hooded.glb`, clips: {} },
-  { out: 'brute-barbarian', src: `${ADV_CHAR}/Barbarian.glb`, clips: {} },
   // ---- shared hero clips (Rig_Medium): locomotion + reactions
   { out: 'anims-hero-base', src: `${ADV_ANIM}/Rig_Medium_General.glb`, meshless: true, clips: { idle: 'Idle_A', hit: 'Hit_A', death: 'Death_A' } },
   { out: 'anims-hero-move', src: `${ADV_ANIM}/Rig_Medium_MovementBasic.glb`, meshless: true, clips: { run: 'Running_A' } },
@@ -50,34 +45,22 @@ const MODELS = [
     clips: {
       swing: '2H_Melee_Attack_Slice',
       spin: '2H_Melee_Attack_Spinning',
-      cast: 'Spellcast_Shoot',
-      castBig: 'Spellcast_Long',
-      shoot: '1H_Ranged_Shoot',
-      stab: 'Dualwield_Melee_Attack_Stab',
-      roll: 'Dodge_Forward',
-      chop: '1H_Melee_Attack_Chop',
     },
   },
-  // ---- enemies: skeleton meshes + one shared skeleton clip library
+  // ---- enemies: skeleton minion + captain meshes, one shared skeleton clip library
   { out: 'skeleton-minion', src: `${SKEL_GLB}/Skeleton_Minion.glb`, clips: {} },
   { out: 'skeleton-warrior', src: `${SKEL_GLB}/Skeleton_Warrior.glb`, clips: {} },
-  { out: 'skeleton-mage', src: `${SKEL_GLB}/Skeleton_Mage.glb`, clips: {} },
   {
     out: 'anims-skeleton',
     src: `${SKEL_GLB}/Skeleton_Minion.glb`,
     meshless: true,
     coreBones: true,
-    clips: { idle: 'Idle_Combat', run: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Chop', cast: 'Spellcast_Shoot', hit: 'Hit_A', death: 'Death_C_Skeletons', spawn: 'Spawn_Ground_Skeletons' },
+    clips: { idle: 'Idle_Combat', run: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_C_Skeletons', spawn: 'Spawn_Ground_Skeletons' },
   },
   // ---- weapons (static, attached to hand bones at runtime)
   { out: 'w-sword', src: `${ADV_ASSET}/sword_2handed.gltf` },
-  { out: 'w-staff', src: `${ADV_ASSET}/staff.gltf` },
-  { out: 'w-bow', src: `${ADV_ASSET}/bow_withString.gltf` },
-  { out: 'w-dagger', src: `${ADV_ASSET}/dagger.gltf` },
-  { out: 'w-axe', src: `${ADV_ASSET}/axe_2handed.gltf` },
   { out: 'w-skel-blade', src: `${SKEL}/Assets/gltf/Skeleton_Blade.gltf` },
   { out: 'w-skel-axe', src: `${SKEL}/Assets/gltf/Skeleton_Axe.gltf` },
-  { out: 'w-skel-staff', src: `${SKEL}/Assets/gltf/Skeleton_Staff.gltf` },
 ];
 
 const CORE = new Set([

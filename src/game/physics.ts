@@ -12,10 +12,6 @@ export function box(cx: number, cz: number, w: number, d: number): Box {
   return { minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 };
 }
 
-export function inBox(x: number, z: number, b: Box, pad = 0): boolean {
-  return x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad;
-}
-
 /** Push a circle out of every box it overlaps. Mutates `p`. */
 export function resolveCircle(p: THREE.Vector3, r: number, boxes: readonly Box[]): boolean {
   let hit = false;
@@ -45,35 +41,6 @@ export function resolveCircle(p: THREE.Vector3, r: number, boxes: readonly Box[]
     }
   }
   return hit;
-}
-
-/** Segment (a→b) vs AABB, slab method. */
-export function segmentHitsBox(ax: number, az: number, bx: number, bz: number, b: Box): boolean {
-  let tmin = 0;
-  let tmax = 1;
-  const dx = bx - ax;
-  const dz = bz - az;
-  for (const [o, d, lo, hi] of [
-    [ax, dx, b.minX, b.maxX],
-    [az, dz, b.minZ, b.maxZ],
-  ] as const) {
-    if (Math.abs(d) < 1e-9) {
-      if (o < lo || o > hi) return false;
-    } else {
-      let t1 = (lo - o) / d;
-      let t2 = (hi - o) / d;
-      if (t1 > t2) [t1, t2] = [t2, t1];
-      tmin = Math.max(tmin, t1);
-      tmax = Math.min(tmax, t2);
-      if (tmin > tmax) return false;
-    }
-  }
-  return true;
-}
-
-export function lineOfSight(ax: number, az: number, bx: number, bz: number, boxes: readonly Box[]): boolean {
-  for (const b of boxes) if (segmentHitsBox(ax, az, bx, bz, b)) return false;
-  return true;
 }
 
 /** Signed smallest difference between two angles, in (-PI, PI]. */

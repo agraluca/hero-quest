@@ -4,25 +4,7 @@
  * - Mute is persisted when storage is available.
  * - suspend()/resume() follow page visibility, so nothing plays while hidden.
  */
-export type Sfx =
-  | 'tap'
-  | 'swing'
-  | 'hit'
-  | 'hurt'
-  | 'fireball'
-  | 'boom'
-  | 'arrow'
-  | 'lever'
-  | 'wrong'
-  | 'coin'
-  | 'clear'
-  | 'death'
-  | 'vanish'
-  | 'alert'
-  | 'backstab'
-  | 'dash'
-  | 'bridge'
-  | 'chest';
+export type Sfx = 'tap' | 'swing' | 'hit' | 'hurt' | 'fireball' | 'coin' | 'clear' | 'death' | 'chest';
 
 import { Music } from './Music';
 
@@ -110,22 +92,6 @@ export class Audio {
         this.noise(0.3, 600, 2400, 0.3, t, 'bandpass');
         this.tone(180, 360, 0.25, 'triangle', 0.15, t);
         break;
-      case 'boom':
-        this.noise(0.35, 900, 120, 0.5, t, 'lowpass');
-        this.tone(120, 40, 0.3, 'sine', 0.4, t);
-        break;
-      case 'arrow':
-        this.noise(0.12, 4000, 1500, 0.25, t, 'highpass');
-        this.tone(900, 500, 0.08, 'triangle', 0.12, t);
-        break;
-      case 'lever':
-        this.tone(520, 520, 0.05, 'square', 0.18, t);
-        this.tone(780, 1040, 0.18, 'triangle', 0.22, t + 0.05);
-        break;
-      case 'wrong':
-        this.tone(220, 200, 0.16, 'square', 0.2, t);
-        this.tone(160, 150, 0.25, 'square', 0.2, t + 0.15);
-        break;
       case 'coin':
         this.tone(988, 988, 0.06, 'square', 0.12, t);
         this.tone(1319, 1319, 0.14, 'square', 0.12, t + 0.06);
@@ -135,25 +101,6 @@ export class Audio {
         break;
       case 'death':
         this.tone(440, 110, 0.6, 'sawtooth', 0.22, t);
-        break;
-      case 'vanish':
-        this.tone(1200, 300, 0.35, 'sine', 0.2, t);
-        this.noise(0.3, 3000, 500, 0.15, t, 'bandpass');
-        break;
-      case 'alert':
-        this.tone(880, 880, 0.08, 'square', 0.2, t);
-        this.tone(1175, 1175, 0.12, 'square', 0.2, t + 0.09);
-        break;
-      case 'backstab':
-        this.noise(0.1, 5000, 2000, 0.35, t, 'highpass');
-        this.tone(1500, 400, 0.2, 'sawtooth', 0.18, t);
-        break;
-      case 'dash':
-        this.noise(0.16, 800, 3000, 0.25, t, 'bandpass');
-        break;
-      case 'bridge':
-        this.tone(110, 220, 0.8, 'triangle', 0.3, t);
-        this.noise(0.8, 400, 200, 0.2, t, 'lowpass');
         break;
       case 'chest':
         [392, 523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, f, 0.22, 'triangle', 0.22, t + i * 0.07));

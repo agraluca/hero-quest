@@ -1,19 +1,10 @@
-import type { HeroSpec } from '../game/Hero';
-import type { StageInfo } from '../stages/registry';
 import { ICONS } from './icons';
 
 /**
- * DOM overlay: title, Discover hub, HUD, modals, redeem screen, toasts.
+ * DOM overlay: HUD, hand hint, modals (pause, fail, resume), redeem screen, toasts.
  * Screens are re-rendered with innerHTML and wired with `onclick` properties,
  * so re-showing a screen never stacks duplicate listeners.
  */
-
-export interface HubModel {
-  cleared: boolean[];
-  coins: number;
-  redeemed: boolean;
-  muted: boolean;
-}
 
 const h = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', html = ''): HTMLElementTagNameMap[K] => {
   const el = document.createElement(tag);
@@ -30,14 +21,11 @@ export class UI {
   private modalLayer = h('div');
   private fxLayer = h('div', 'hud');
   readonly hud = h('div', 'hud hidden');
-  readonly controls: { zone: HTMLElement; stick: HTMLElement; knob: HTMLElement; main: HTMLElement; alt: HTMLElement };
+  readonly controls: { zone: HTMLElement; stick: HTMLElement; knob: HTMLElement };
   private hearts: HTMLElement;
   private objective: HTMLElement;
   private balanceEl: HTMLElement;
-  private cdRing: HTMLElement;
-  private extra: HTMLElement;
   private hintEl: HTMLElement;
-  private lastExtra: string | null = '';
   private shownCoins = 0;
   private lastObjective = '';
   private lastHearts = '';
@@ -51,12 +39,8 @@ export class UI {
     // HUD (built once, shown/hidden per stage)
     this.hud.innerHTML = `
       <div class="stick-zone"><div class="stick idle"><div class="knob"></div></div></div>
-      <div class="actions">
-        <button class="act alt" aria-label="Special"><span class="cd"></span><span class="ico"></span><span class="lbl"></span></button>
-        <button class="act main" aria-label="Attack"><span class="ico"></span><span class="lbl"></span></button>
-      </div>
       <div class="hud-top">
-        <div class="hud-left"><div class="hearts"></div><div class="objective"></div><div class="hud-extra hidden"></div></div>
+        <div class="hud-left"><div class="hearts"></div><div class="objective"></div></div>
         <div class="hud-right">
           <div class="balance" title="Demo balance, not real earnings"><span class="coin"></span><span class="val">0</span></div>
           <button class="icon-btn pause" aria-label="Pause">${ICONS.pause}</button>
@@ -69,18 +53,12 @@ export class UI {
       zone: q('.stick-zone'),
       stick: q('.stick'),
       knob: q('.knob'),
-      main: q('.act.main'),
-      alt: q('.act.alt'),
     };
     this.hearts = q('.hearts');
     this.objective = q('.objective');
     this.balanceEl = q('.balance .val');
-    this.cdRing = q('.act.alt .cd');
-    this.extra = q('.hud-extra');
     this.hintEl = q('.hint');
     q<HTMLButtonElement>('.pause').onclick = () => this.onPause();
-    // one-touch playable: attacks and the special fire automatically
-    q('.actions').classList.add('hidden');
     if (matchMedia('(pointer: coarse)').matches) q('.keys-hint').classList.add('hidden');
 
     root.append(this.screen, this.hud, this.fxLayer, this.modalLayer);
@@ -96,111 +74,19 @@ export class UI {
     this.setScreen(null);
   }
 
-  showTitle(onStart: () => void): void {
-    const el = h(
-      'div',
-      'screen title-screen',
-      `<img src="./fox.webp" alt="Scrambly fox" />
-       <div class="eyebrow">A Scrambly playable</div>
-       <h1>Hero<br/><span>Quest</span></h1>
-       <p class="sub">Discover 4 heroes, play through their challenges, and collect demo coins to redeem a reward.</p>
-       <button class="btn pulse start">${ICONS.play} Tap to start</button>
-       <div class="demo-note">Demo only · coins have no real value</div>`,
-    );
-    (el.querySelector('.start') as HTMLButtonElement).onclick = onStart;
-    this.setScreen(el);
-  }
-
-  showHub(
-    m: HubModel,
-    on: { play(i: number): void; redeem(): void; restart(): void; mute(): void },
-    stages: StageInfo[],
-  ): void {
-    const clearedCount = m.cleared.filter(Boolean).length;
-    const next = m.cleared.indexOf(false);
-    const allDone = next === -1;
-    const step = allDone ? (m.redeemed ? 3 : 2) : clearedCount > 0 ? 1 : 0;
-    const guideText = allDone
-      ? 'You played them all! Open the reward chest to <b>redeem</b> your demo coins.'
-      : clearedCount === 0
-        ? 'Hi! On Scrambly you <b>discover</b> new games, <b>play</b> to progress and <b>redeem</b> rewards. Try your first game!'
-        : `Nice! ${clearedCount}/4 played. A new game has unlocked. Keep going!`;
-
-    const el = h('div', 'screen hub');
-    el.innerHTML = `
-      <div class="hub-top">
-        <div class="balance"><span class="coin"></span><span>${fmt(m.coins)}</span><small>demo</small></div>
-        <button class="icon-btn mute" aria-label="Toggle sound">${m.muted ? ICONS.soundOff : ICONS.soundOn}</button>
-      </div>
-      <div class="guide"><img src="./fox.webp" alt="" /><div class="bubble">${guideText}</div></div>
-      <div class="journey">
-        <div class="${step >= 0 ? 'on' : ''}">1 · Discover</div>
-        <div class="${step >= 1 ? 'on' : ''}">2 · Play</div>
-        <div class="${step >= 2 ? 'on' : ''}">3 · Redeem</div>
-      </div>
-      <div class="progress"><i style="width:${(clearedCount / 4) * 100}%"></i></div>
-      <h3>Discover games</h3>
-      <div class="cards"></div>
-      <div class="hub-foot">
-        <span class="demo-note">Demo balance, not real earnings</span>
-        <button class="btn ghost restart" style="min-height:40px;padding:8px 14px;font-size:14px">${ICONS.restart} Restart</button>
-      </div>`;
-    const cards = el.querySelector('.cards') as HTMLElement;
-    stages.forEach((s, i) => {
-      const done = m.cleared[i];
-      // replaying cleared stages is allowed, which helps reviewers
-      const unlocked = done || i === next;
-      const chip = done ? `<span class="chip done">Played</span>` : unlocked ? `<span class="chip">Play</span>` : `<span class="chip lock">Locked</span>`;
-      const card = h(
-        'button',
-        `card ${unlocked ? '' : 'locked'} ${i === next ? 'next' : ''}`,
-        `<div class="art" style="background:${s.color}">${unlocked ? s.icon : ICONS.lock}</div>
-         <div class="meta"><b>${s.title}</b><span>${s.heroName} · ${s.tagline}</span></div>${chip}`,
-      );
-      card.onclick = () => (unlocked ? on.play(i) : this.toast('Clear the previous game to unlock'));
-      cards.append(card);
-    });
-    const chest = h(
-      'button',
-      `card ${allDone ? (m.redeemed ? '' : 'next') : 'locked'}`,
-      `<div class="art" style="background:linear-gradient(135deg,#F58324,#7845D8)">${allDone ? ICONS.chest : ICONS.lock}</div>
-       <div class="meta"><b>Reward chest</b><span>${allDone ? 'Redeem your demo coins' : 'Play all 4 games to unlock'}</span></div>
-       ${allDone ? `<span class="chip">${m.redeemed ? 'Open' : 'Redeem'}</span>` : '<span class="chip lock">Locked</span>'}`,
-    );
-    chest.onclick = () => (allDone ? on.redeem() : this.toast('Play all 4 games to unlock the chest'));
-    cards.append(chest);
-    (el.querySelector('.mute') as HTMLButtonElement).onclick = on.mute;
-    (el.querySelector('.restart') as HTMLButtonElement).onclick = on.restart;
-    this.setScreen(el);
-  }
-
   // ------------------------------------------------------------ HUD
 
-  showHud(spec: HeroSpec): void {
+  showHud(): void {
     this.hud.classList.remove('hidden');
-    const main = this.controls.main;
-    const alt = this.controls.alt;
-    const mainIcon = { warrior: ICONS.sword, mage: ICONS.flame, archer: ICONS.bow, rogue: ICONS.dagger }[spec.kind];
-    const mainLabel = { warrior: 'Attack', mage: 'Cast', archer: 'Shoot', rogue: 'Strike' }[spec.kind];
-    main.querySelector('.ico')!.innerHTML = mainIcon;
-    main.querySelector('.lbl')!.textContent = mainLabel;
-    alt.querySelector('.ico')!.innerHTML = { vanish: ICONS.eyeOff, firespin: ICONS.spin, inferno: ICONS.meteor, frost: ICONS.snow, dash: ICONS.dash }[spec.special];
-    alt.querySelector('.lbl')!.textContent = spec.specialLabel;
     this.lastObjective = '';
     this.lastHearts = '';
-    this.lastExtra = '';
   }
 
   hideHud(): void {
     this.hud.classList.add('hidden');
   }
 
-  updateHud(hp: number, maxHp: number, objective: string, specialReady: number, extra: string | null = null): void {
-    if (extra !== this.lastExtra) {
-      this.lastExtra = extra;
-      this.extra.classList.toggle('hidden', !extra);
-      this.extra.innerHTML = extra ?? '';
-    }
+  updateHud(hp: number, maxHp: number, objective: string): void {
     const hearts = `${hp}/${maxHp}`;
     if (hearts !== this.lastHearts) {
       this.lastHearts = hearts;
@@ -210,13 +96,6 @@ export class UI {
       this.lastObjective = objective;
       this.objective.textContent = objective;
     }
-    const ready = specialReady >= 1;
-    this.controls.alt.classList.toggle('cooling', !ready);
-    this.cdRing.style.background = ready
-      ? 'none'
-      : `conic-gradient(rgba(255,246,232,0.85) ${specialReady * 360}deg, transparent 0)`;
-    this.cdRing.style.mask = ready ? '' : 'radial-gradient(circle, transparent 62%, #000 63%)';
-    this.cdRing.style.webkitMask = this.cdRing.style.mask;
   }
 
   /** Animated "drag" hand with a label; null hides it. */
@@ -257,21 +136,6 @@ export class UI {
     return wrap;
   }
 
-  showIntro(info: StageInfo, index: number, onPlay: () => void, onBack: () => void): void {
-    const el = this.modal(`
-      <div class="hero-art" style="background:${info.color}">${info.icon}</div>
-      <span class="eyebrow">Game ${index + 1} of 4 · ${info.heroName}</span>
-      <h2>${info.title}</h2>
-      <p>${info.goal}</p>
-      <ul class="tips">${info.tips.map((t) => `<li>${t}</li>`).join('')}</ul>
-      <div class="stack">
-        <button class="btn go">${ICONS.play} Play</button>
-        <button class="btn ghost back">Back to Discover</button>
-      </div>`);
-    (el.querySelector('.go') as HTMLButtonElement).onclick = onPlay;
-    (el.querySelector('.back') as HTMLButtonElement).onclick = onBack;
-  }
-
   showPause(on: { resume(): void; restart(): void; mute(): void }, muted: boolean): void {
     const el = this.modal(`
       <span class="eyebrow">Paused</span>
@@ -285,21 +149,6 @@ export class UI {
     b('.resume').onclick = on.resume;
     b('.restart').onclick = on.restart;
     b('.mute').onclick = on.mute;
-  }
-
-  showClear(info: StageInfo, earned: number, isLast: boolean, onContinue: () => void, onReplay: () => void): void {
-    const el = this.modal(`
-      <div class="hero-art" style="background:${info.color}">${ICONS.check}</div>
-      <span class="eyebrow">Game cleared</span>
-      <h2>${info.title} complete!</h2>
-      <p>${isLast ? 'All four games played. Time to redeem!' : 'Progress saved. A new game unlocked on Discover.'}</p>
-      <div class="reward-row"><span class="coin"></span>+${fmt(earned)} <small style="font-size:13px;opacity:.6">demo coins</small></div>
-      <div class="stack">
-        <button class="btn go">${isLast ? ICONS.chest + ' Go redeem' : 'Continue'}</button>
-        <button class="btn ghost replay">${ICONS.restart} Play again</button>
-      </div>`);
-    (el.querySelector('.go') as HTMLButtonElement).onclick = onContinue;
-    (el.querySelector('.replay') as HTMLButtonElement).onclick = onReplay;
   }
 
   showFail(coins: number, summary: string, on: { retry(): void; cta(): void }): void {

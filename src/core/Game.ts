@@ -3,7 +3,7 @@ import { makeHeroRig } from '../game/models';
 import type { Rig } from '../game/rigs';
 import { toon } from '../game/materials';
 import { DEFAULT_ATMOSPHERE, type Atmosphere, type BaseStage, type StageHost } from '../stages/BaseStage';
-import { STAGES } from '../stages/registry';
+import { WarriorStage } from '../stages/WarriorStage';
 import { UI } from '../ui/UI';
 import { Audio } from './Audio';
 import { Clock, Scheduler } from './Clock';
@@ -12,8 +12,8 @@ import { Input } from './Input';
 
 type Mode = 'play' | 'end';
 
-/** The one level this playable runs (Bone Cavern). */
-const STAGE = STAGES[0];
+/** demo coins awarded for clearing the level */
+const CLEAR_BONUS = 100;
 
 const VFOV = 42;
 const ELEVATION = THREE.MathUtils.degToRad(54);
@@ -40,7 +40,7 @@ export class Game implements StageHost {
   private camLook = new THREE.Vector3();
   private lastFrame = 0;
   private backdrop = new THREE.Group();
-  private backdropRigs: Rig[] = [];
+  private backdropRig: Rig | null = null;
   private hemi = new THREE.HemisphereLight();
   private sun = new THREE.DirectionalLight();
   private width = 1;
@@ -69,12 +69,12 @@ export class Game implements StageHost {
     this.d.listen(window, 'orientationchange', () => this.resize());
     this.d.listen(document, 'visibilitychange', () => this.onVisibility());
     // stop iOS rubber-band scroll / double-tap zoom from fighting the game
-    // (the Discover list and long modals may still scroll vertically on short screens)
+    // (long modals may still scroll vertically on short screens)
     this.d.listen(
       document,
       'touchmove',
       (e) => {
-        if (!(e.target instanceof Element && e.target.closest('.hub, .modal'))) e.preventDefault();
+        if (!(e.target instanceof Element && e.target.closest('.modal'))) e.preventDefault();
       },
       { passive: false },
     );
@@ -107,13 +107,13 @@ export class Game implements StageHost {
   private loadStage(): void {
     this.disposeStage();
     this.ui.hint(null);
-    const stage = STAGE.create(this);
+    const stage = new WarriorStage(this);
     stage.init();
     this.scene.add(stage.root);
     this.stage = stage;
     this.applyAtmosphere(stage.atmosphere);
     this.backdrop.visible = false;
-    this.ui.showHud(stage.hero.spec);
+    this.ui.showHud();
     this.ui.setBalance(this.coins, false);
     this.snapCamera();
   }
@@ -124,7 +124,7 @@ export class Game implements StageHost {
     this.clock.resume('modal');
     this.clock.resume('menu');
     this.input.setEnabled(true);
-    this.banner(STAGE.title, `${STAGE.heroName}: go!`);
+    this.banner('Bone Cavern', 'Warrior: go!');
   }
 
   private openPause(): void {
@@ -163,10 +163,10 @@ export class Game implements StageHost {
   }
 
   stageCleared(): void {
-    this.coins += STAGE.bonus;
+    this.coins += CLEAR_BONUS;
     this.ui.setBalance(this.coins);
     this.input.setEnabled(false);
-    this.banner('Victory!', `+${STAGE.bonus} bonus demo coins`);
+    this.banner('Victory!', `+${CLEAR_BONUS} bonus demo coins`);
     this.sched.after(1.3, () => this.showRedeem());
   }
 
@@ -342,39 +342,33 @@ export class Game implements StageHost {
       }
       this.camera.lookAt(this.camLook);
       const hero = this.stage.hero;
-      this.ui.updateHud(hero.hp, hero.spec.maxHp, this.stage.objective(), 1 - hero.specialCd / hero.spec.specialCd, this.stage.hudExtra());
+      this.ui.updateHud(hero.hp, hero.spec.maxHp, this.stage.objective());
     } else {
       this.updateBackdrop(raw);
     }
     this.renderer.render(this.scene, this.camera);
   }
 
-  // ------------------------------------------------------------ menu backdrop
+  // ------------------------------------------------------------ reward backdrop
 
+  /** The warrior on a slowly turning pedestal, behind the reward chest. */
   private buildBackdrop(): void {
     const g = this.backdrop;
     const ground = new THREE.Mesh(new THREE.CylinderGeometry(6, 6.4, 0.6, 40), toon(0x3a2470));
     ground.position.y = -0.3;
-    g.add(ground);
-    const kinds = ['warrior', 'mage', 'archer', 'rogue'] as const;
-    kinds.forEach((k, i) => {
-      const a = (i / kinds.length) * Math.PI * 2;
-      const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.4, 20), toon(i % 2 ? 0xf58324 : 0x7845d8));
-      ped.position.set(Math.sin(a) * 3.2, 0.2, Math.cos(a) * 3.2);
-      g.add(ped);
-      const rig = makeHeroRig(k);
-      rig.root.position.set(Math.sin(a) * 3.2, 0.4, Math.cos(a) * 3.2);
-      rig.root.rotation.y = a;
-      rig.root.scale.setScalar(1.3);
-      g.add(rig.root);
-      this.backdropRigs.push(rig);
-    });
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.4, 24), toon(0xf58324));
+    ped.position.y = 0.2;
+    g.add(ground, ped);
+    this.backdropRig = makeHeroRig();
+    this.backdropRig.root.position.y = 0.4;
+    this.backdropRig.root.scale.setScalar(1.5);
+    g.add(this.backdropRig.root);
     this.scene.add(g);
   }
 
   private updateBackdrop(dt: number): void {
     this.backdrop.rotation.y += dt * 0.35;
-    for (const r of this.backdropRigs) r.update(dt, { speed: 0, action: 'none', t: 0, dead: 0 });
+    this.backdropRig?.update(dt, { speed: 0, action: 'none', t: 0, dead: 0 });
     const d = this.camDistance(9);
     this.camera.position.set(0, 3.5 + d * 0.25, d * 0.95);
     this.camera.lookAt(0, 1.6, 0);
@@ -396,9 +390,6 @@ export class Game implements StageHost {
       },
       get enemies() {
         return game.stage?.enemies.length ?? 0;
-      },
-      get projectiles() {
-        return game.stage?.projectiles.list.length ?? 0;
       },
       get sceneObjects() {
         let n = 0;

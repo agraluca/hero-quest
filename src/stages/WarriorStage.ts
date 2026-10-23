@@ -40,7 +40,7 @@ export class WarriorStage extends BaseStage {
   private idleHint = false;
 
   constructor(host: StageHost) {
-    super(host, 'warrior');
+    super(host);
     this.viewWidth = 9.5;
     this.atmosphere = {
       bg: 0x110b1c,
@@ -101,7 +101,6 @@ export class WarriorStage extends BaseStage {
       hole.position.set(s.x, 0.02, s.z);
       r.add(hole);
     }
-    this.sightBlockers = this.obstacles;
     this.spawnPoint.set(0, 0, 4.5);
     // nothing spawns until the player's first move (which also unlocks audio)
     this.host.hint('Drag to move');

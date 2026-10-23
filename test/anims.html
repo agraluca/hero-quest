@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- Dev-only: side view of every character cycling each action clip (not in the build).
-     http://localhost:5199/test/anims.html?action=swing  (none|swing|spin|cast|castBig|shoot|stab|roll|windup|death) -->
+     http://localhost:5199/test/anims.html?action=swing  (none|run|swing|spin|windup|death) -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -32,8 +32,8 @@
       cam.position.set(0, 3.2, 15);
       cam.lookAt(0, 1.2, 0);
       const rigs = [
-        ...['warrior', 'mage', 'archer', 'rogue'].map((k) => makeHeroRig(k)),
-        ...['skeleton', 'captain', 'caster', 'warlock', 'brute'].map((k) => makeEnemyRig(k)),
+        makeHeroRig(),
+        ...['skeleton', 'captain'].map((k) => makeEnemyRig(k)),
       ];
       window.__rigs = rigs;
       rigs.forEach((r, i) => {
@@ -43,7 +43,7 @@
       });
       let action = new URLSearchParams(location.search).get('action') ?? 'none';
       const bar = document.getElementById('bar');
-      for (const a of ['none', 'run', 'swing', 'spin', 'cast', 'castBig', 'shoot', 'stab', 'roll', 'windup', 'death']) {
+      for (const a of ['none', 'run', 'swing', 'spin', 'windup', 'death']) {
         const b = document.createElement('button');
         b.textContent = a;
         b.onclick = () => (action = a);
