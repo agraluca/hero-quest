@@ -1,18 +1,22 @@
 import * as THREE from 'three';
 import type { EnemyKind } from '../game/rigs';
 import { BaseStage, type StageHost } from './BaseStage';
-import { crystals, floor, Portal, rock, rockWall, stalagmite, torch } from './env';
+import { crystals, floor, rock, rockWall, stalagmite, torch } from './env';
 
 /**
  * Stage 1: Bone Cavern.
- * Three escalating waves of skeletons pour out of the cave mouths.
- * The warrior's Fire Spin clears crowds; clearing every wave opens the portal.
+ * Three escalating waves of skeletons pour out of the cave mouths, fast,
+ * so standing still gets you surrounded. Clearing the last wave wins the run.
  */
 const WAVES: EnemyKind[][] = [
-  Array(6).fill('skeleton'),
-  ['captain', ...Array(8).fill('skeleton')],
-  ['captain', 'captain', ...Array(10).fill('skeleton')],
+  Array(8).fill('skeleton'),
+  ['captain', ...Array(11).fill('skeleton')],
+  ['captain', 'captain', ...Array(14).fill('skeleton')],
 ];
+/** seconds between skeletons of the same wave */
+const SPAWN_GAP = 0.18;
+/** pause between waves */
+const WAVE_GAP = 0.8;
 
 /** cave mouths around the arena edge */
 const SPAWNS = [
@@ -95,12 +99,10 @@ export class WarriorStage extends BaseStage {
     }
     this.sightBlockers = this.obstacles;
     this.spawnPoint.set(0, 0, 4.5);
-    this.exit = new Portal(r, new THREE.Vector3(0, 0, -5.8));
     this.sched.after(1.0, () => this.nextWave());
   }
 
   objective(): string {
-    if (this.exit?.isOpen) return 'Enter the portal';
     if (this.wave < 0) return 'Get ready…';
     const left = this.aliveEnemies + WAVES[this.wave].length - this.spawnedThisWave();
     return `Wave ${this.wave + 1}/${WAVES.length}: defeat the skeletons (${left} left)`;
@@ -119,7 +121,7 @@ export class WarriorStage extends BaseStage {
     list.forEach((kind, i) => {
       const s = SPAWNS[(i + this.wave * 3) % SPAWNS.length];
       // staggered so the wave pours in "in order"
-      this.sched.after(i * 0.3, () => {
+      this.sched.after(i * SPAWN_GAP, () => {
         const e = this.addEnemy(kind, s.x + (Math.random() - 0.5) * 1.2, s.z + (Math.random() - 0.5) * 1.2);
         e.facing = Math.atan2(this.hero.pos.x - e.pos.x, this.hero.pos.z - e.pos.z);
         this.fx.ring(e.pos, 0x9a6cff, 2);
@@ -135,9 +137,9 @@ export class WarriorStage extends BaseStage {
     this.waveCleared = true;
     if (this.wave < WAVES.length - 1) {
       this.host.banner('Wave cleared!');
-      this.sched.after(1.4, () => this.nextWave());
+      this.sched.after(WAVE_GAP, () => this.nextWave());
     } else {
-      this.openExit();
+      this.finish();
     }
   }
 

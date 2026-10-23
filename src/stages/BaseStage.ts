@@ -55,7 +55,7 @@ export interface Target {
 }
 
 /** warrior swing reach (plus the enemy's radius) */
-const SWING_REACH = 2.1;
+const SWING_REACH = 1.8;
 /** fire spin radius: auto-cast when this many skeletons crowd in */
 const SPIN_REACH = 2.6;
 const SPIN_CROWD = 3;
@@ -324,9 +324,9 @@ export abstract class BaseStage implements EnemyWorld {
           const dx = e.pos.x - h.pos.x;
           const dz = e.pos.z - h.pos.z;
           const dist = Math.hypot(dx, dz);
-          if (dist > 2.1 + e.spec.radius) continue;
+          if (dist > SWING_REACH + e.spec.radius) continue;
           if (Math.abs(angleDiff(h.facing, yawTo(dx, dz))) > 1.25) continue;
-          this.hitEnemy(e, 1, h.pos, 8);
+          this.hitEnemy(e, 1, h.pos, 4);
           hits++;
         }
         if (hits > 0) this.fx.shake = Math.max(this.fx.shake, 0.18);
@@ -732,7 +732,7 @@ export abstract class BaseStage implements EnemyWorld {
     this.host.banner('Portal open!', 'Step into the portal');
   }
 
-  private finish(): void {
+  protected finish(): void {
     this.done = true;
     const rest = this.coins.flush();
     if (rest > 0) this.host.addCoins(rest);

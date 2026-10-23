@@ -26,7 +26,7 @@ interface EnemySpec {
 }
 
 const SPECS: Record<EnemyKind, EnemySpec> = {
-  skeleton: { hp: 2, speed: 2.6, radius: 0.4, coins: 2, reach: 1.25, damage: 1 },
+  skeleton: { hp: 2, speed: 2.6, radius: 0.4, coins: 2, reach: 1.5, damage: 1 },
   captain: { hp: 7, speed: 2.2, radius: 0.6, coins: 6, reach: 1.7, damage: 2 },
   caster: { hp: 2, speed: 1.2, radius: 0.4, coins: 2, reach: 0, damage: 1 },
   warlock: { hp: 7, speed: 0.8, radius: 0.6, coins: 8, reach: 0, damage: 1 },
@@ -161,8 +161,8 @@ export class Enemy {
       if (this.alertMark) this.alertMark.visible = false;
       return true;
     }
-    // interrupt melee wind-ups
-    if (this.state === 'windup' && this.kind === 'skeleton') this.setState('stun', 0.3);
+    // only heavy hits (fire spin) interrupt melee wind-ups, so auto-swings alone can't stun-lock
+    if (this.state === 'windup' && this.kind === 'skeleton' && knock >= 8) this.setState('stun', 0.3);
     if (this.kind === 'bat') this.setState('retreat', 0.6);
     return false;
   }
