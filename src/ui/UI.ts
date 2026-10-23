@@ -291,6 +291,22 @@ export class UI {
     (el.querySelector('.replay') as HTMLButtonElement).onclick = onReplay;
   }
 
+  showFail(coins: number, summary: string, on: { retry(): void; cta(): void }): void {
+    const el = this.modal(`
+      <div class="hero-art" style="background:var(--bad)">${ICONS.skull}</div>
+      <span class="eyebrow">Run over</span>
+      <h2>Knocked out!</h2>
+      <p>${summary ? `${summary}. ` : ''}Dodge the red flashes and try again.</p>
+      <div class="reward-row"><span class="coin"></span>${fmt(coins)} <small style="font-size:13px;opacity:.6">demo coins earned</small></div>
+      <div class="stack">
+        <button class="btn go">${ICONS.restart} Try again</button>
+        <button class="btn purple cta">Explore Scrambly</button>
+      </div>
+      <p class="demo-note" style="margin:10px 0 0">Demo only. Coins shown here have no real value.</p>`);
+    (el.querySelector('.go') as HTMLButtonElement).onclick = on.retry;
+    (el.querySelector('.cta') as HTMLButtonElement).onclick = on.cta;
+  }
+
   showRedeem(total: number, on: { cta(): void; restart(): void }, audio: { chest(): void }): void {
     const el = h(
       'div',

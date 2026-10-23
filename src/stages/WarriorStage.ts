@@ -106,6 +106,10 @@ export class WarriorStage extends BaseStage {
     return `Wave ${this.wave + 1}/${WAVES.length}: defeat the skeletons (${left} left)`;
   }
 
+  failSummary(): string {
+    return `You reached wave ${Math.max(this.wave + 1, 1)} of ${WAVES.length}`;
+  }
+
   private nextWave(): void {
     this.wave++;
     this.waveCleared = false;

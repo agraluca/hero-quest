@@ -17,6 +17,8 @@ export interface StageHost {
   input: Input;
   addCoins(n: number): void;
   stageCleared(): void;
+  /** the hero was knocked out: the run is over */
+  stageFailed(summary: string): void;
   banner(text: string, sub?: string): void;
   floatText(at: THREE.Vector3, text: string, kind?: 'good' | 'bad' | 'info'): void;
 }
@@ -107,6 +109,10 @@ export abstract class BaseStage implements EnemyWorld {
   hudExtra(): string | null {
     return null;
   }
+  /** one line for the fail card (e.g. how far the player got) */
+  failSummary(): string {
+    return '';
+  }
   /** stage-specific per-frame logic */
   protected tick(_dt: number): void {}
   protected onEnemyKilled(_e: Enemy): void {}
@@ -171,7 +177,11 @@ export abstract class BaseStage implements EnemyWorld {
     const wantAlt = input.takeAlt();
 
     if (h.dead) {
-      if (h.deadT > 1.4) this.respawnHero();
+      // knocked out = run over: let the fall animation play, then hand over to the fail card
+      if (h.deadT > 1.2 && !this.done) {
+        this.done = true;
+        this.host.stageFailed(this.failSummary());
+      }
       h.moveAmount = 0;
       h.syncVisual(dt);
       return;
@@ -513,12 +523,7 @@ export abstract class BaseStage implements EnemyWorld {
     h.windupT = 0;
     h.invisT = 0;
     this.host.audio.play('death');
-    this.host.banner('Knocked out!', 'Back on your feet in a moment');
-  }
-
-  private respawnHero(): void {
-    this.hero.respawn(this.spawnPoint, this.spawnFacing);
-    this.onHeroRespawn();
+    this.host.banner('Knocked out!');
   }
 
   private overPit(p: THREE.Vector3): boolean {

@@ -17,6 +17,7 @@ export const ICONS = {
   meteor: svg('<circle cx="15" cy="9" r="5"/><path d="M11 13 3 21"/><path d="M8 9 3 14"/><path d="M15 16l-5 5"/>'),
   snow: svg('<path d="M12 2v20M4 6l16 12M20 6 4 18"/><path d="m9 3 3 3 3-3M9 21l3-3 3 3"/>'),
   sparkle: svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
+  skull: svg('<path d="M12 3a8 8 0 0 0-8 8c0 2.6 1.3 4.6 3 5.8V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3.2c1.7-1.2 3-3.2 3-5.8a8 8 0 0 0-8-8z"/><circle cx="9" cy="12" r="1.7" fill="currentColor"/><circle cx="15" cy="12" r="1.7" fill="currentColor"/><path d="M10 21v-2.5M14 21v-2.5"/>'),
   check: svg('<path d="m5 12 5 5L20 7"/>'),
   lock: svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
   restart: svg('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'),

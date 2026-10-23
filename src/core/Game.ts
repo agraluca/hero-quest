@@ -169,6 +169,14 @@ export class Game implements StageHost {
     this.sched.after(1.3, () => this.showRedeem());
   }
 
+  stageFailed(summary: string): void {
+    this.mode = 'end';
+    this.input.setEnabled(false);
+    // freeze the arena behind the card
+    this.clock.pause('modal');
+    this.ui.showFail(this.coins, summary, { retry: () => this.restartRun(), cta: () => this.cta() });
+  }
+
   private showRedeem(): void {
     this.disposeStage();
     this.mode = 'end';
