@@ -365,6 +365,10 @@ button {
   opacity: 0.55;
 }
 
+.hud.hinting .stick.idle {
+  opacity: 0;
+}
+
 .knob {
   position: absolute;
   left: 50%;

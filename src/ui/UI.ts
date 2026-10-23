@@ -101,6 +101,8 @@ export class UI {
   /** Animated "drag" hand with a label; null hides it. */
   hint(text: string | null): void {
     this.hintEl.classList.toggle('hidden', !text);
+    // the resting joystick hides while the hand shows where to drag
+    this.hud.classList.toggle('hinting', !!text);
     if (text) this.hintEl.querySelector('.lbl')!.textContent = text;
   }
 

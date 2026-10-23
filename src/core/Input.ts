@@ -131,7 +131,9 @@ export class Input {
     this.stickVec = { x: 0, y: 0 };
     this.el.knob.style.transform = '';
     this.el.stick.classList.add('idle');
-    // Resting position: bottom-centre of the zone.
-    this.placeStick(this.el.zone.clientWidth / 2, Math.max(this.el.zone.clientHeight - 110, 70));
+    // Resting position: bottom-centre of the zone (in CSS units, so it's right
+    // even when this runs while the HUD is still hidden and has no size)
+    this.el.stick.style.left = '50%';
+    this.el.stick.style.top = 'calc(100% - 110px)';
   }
 }
