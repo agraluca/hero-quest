@@ -17,6 +17,8 @@ const WAVES: EnemyKind[][] = [
 const SPAWN_GAP = 0.18;
 /** pause between waves */
 const WAVE_GAP = 0.8;
+/** seconds without moving before the hand hint comes back */
+const IDLE_HINT = 3;
 
 /** cave mouths around the arena edge */
 const SPAWNS = [
@@ -34,6 +36,8 @@ export class WarriorStage extends BaseStage {
   private waveCleared = true;
   private spawned = 0;
   private spawnedWave = -1;
+  private idleT = 0;
+  private idleHint = false;
 
   constructor(host: StageHost) {
     super(host, 'warrior');
@@ -99,11 +103,12 @@ export class WarriorStage extends BaseStage {
     }
     this.sightBlockers = this.obstacles;
     this.spawnPoint.set(0, 0, 4.5);
-    this.sched.after(1.0, () => this.nextWave());
+    // nothing spawns until the player's first move (which also unlocks audio)
+    this.host.hint('Drag to move');
   }
 
   objective(): string {
-    if (this.wave < 0) return 'Get ready…';
+    if (this.wave < 0) return 'Move to start';
     const left = this.aliveEnemies + WAVES[this.wave].length - this.spawnedThisWave();
     return `Wave ${this.wave + 1}/${WAVES.length}: defeat the skeletons (${left} left)`;
   }
@@ -130,8 +135,18 @@ export class WarriorStage extends BaseStage {
     });
   }
 
-  protected tick(): void {
-    if (this.waveCleared || this.wave < 0) return;
+  protected tick(dt: number): void {
+    const move = this.host.input.move;
+    const moving = Math.hypot(move.x, move.y) > 0.1;
+    if (this.wave < 0) {
+      if (moving) {
+        this.host.hint(null);
+        this.nextWave();
+      }
+      return;
+    }
+    this.updateIdleHint(dt, moving);
+    if (this.waveCleared) return;
     const pending = WAVES[this.wave].length - this.spawnedThisWave();
     if (pending > 0 || this.aliveEnemies > 0) return;
     this.waveCleared = true;
@@ -140,6 +155,23 @@ export class WarriorStage extends BaseStage {
       this.sched.after(WAVE_GAP, () => this.nextWave());
     } else {
       this.finish();
+    }
+  }
+
+  /** The hand comes back if the player stops moving for a while. */
+  private updateIdleHint(dt: number, moving: boolean): void {
+    if (moving || this.hero.dead) {
+      this.idleT = 0;
+      if (this.idleHint) {
+        this.idleHint = false;
+        this.host.hint(null);
+      }
+      return;
+    }
+    this.idleT += dt;
+    if (this.idleT > IDLE_HINT && !this.idleHint) {
+      this.idleHint = true;
+      this.host.hint('Keep moving!');
     }
   }
 

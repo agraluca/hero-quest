@@ -36,6 +36,7 @@ export class UI {
   private balanceEl: HTMLElement;
   private cdRing: HTMLElement;
   private extra: HTMLElement;
+  private hintEl: HTMLElement;
   private lastExtra: string | null = '';
   private shownCoins = 0;
   private lastObjective = '';
@@ -61,6 +62,7 @@ export class UI {
           <button class="icon-btn pause" aria-label="Pause">${ICONS.pause}</button>
         </div>
       </div>
+      <div class="hint hidden"><div class="track"><i class="dot"></i><span class="hand">${ICONS.hand}</span></div><b class="lbl"></b></div>
       <div class="keys-hint">WASD / arrows or drag to move · attacks are automatic</div>`;
     const q = <T extends HTMLElement>(s: string) => this.hud.querySelector(s) as T;
     this.controls = {
@@ -75,6 +77,7 @@ export class UI {
     this.balanceEl = q('.balance .val');
     this.cdRing = q('.act.alt .cd');
     this.extra = q('.hud-extra');
+    this.hintEl = q('.hint');
     q<HTMLButtonElement>('.pause').onclick = () => this.onPause();
     // one-touch playable: attacks and the special fire automatically
     q('.actions').classList.add('hidden');
@@ -214,6 +217,12 @@ export class UI {
       : `conic-gradient(rgba(255,246,232,0.85) ${specialReady * 360}deg, transparent 0)`;
     this.cdRing.style.mask = ready ? '' : 'radial-gradient(circle, transparent 62%, #000 63%)';
     this.cdRing.style.webkitMask = this.cdRing.style.mask;
+  }
+
+  /** Animated "drag" hand with a label; null hides it. */
+  hint(text: string | null): void {
+    this.hintEl.classList.toggle('hidden', !text);
+    if (text) this.hintEl.querySelector('.lbl')!.textContent = text;
   }
 
   setBalance(n: number, animate = true): void {

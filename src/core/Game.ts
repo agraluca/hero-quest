@@ -106,6 +106,7 @@ export class Game implements StageHost {
 
   private loadStage(): void {
     this.disposeStage();
+    this.ui.hint(null);
     const stage = STAGE.create(this);
     stage.init();
     this.scene.add(stage.root);
@@ -172,6 +173,7 @@ export class Game implements StageHost {
   stageFailed(summary: string): void {
     this.mode = 'end';
     this.input.setEnabled(false);
+    this.ui.hint(null);
     // freeze the arena behind the card
     this.clock.pause('modal');
     this.ui.showFail(this.coins, summary, { retry: () => this.restartRun(), cta: () => this.cta() });
@@ -236,6 +238,10 @@ export class Game implements StageHost {
 
   banner(text: string, sub?: string): void {
     this.ui.banner(text, sub);
+  }
+
+  hint(text: string | null): void {
+    this.ui.hint(text);
   }
 
   floatText(at: THREE.Vector3, text: string, kind: 'good' | 'bad' | 'info' = 'info'): void {

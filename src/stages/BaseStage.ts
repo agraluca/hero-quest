@@ -21,6 +21,8 @@ export interface StageHost {
   stageFailed(summary: string): void;
   banner(text: string, sub?: string): void;
   floatText(at: THREE.Vector3, text: string, kind?: 'good' | 'bad' | 'info'): void;
+  /** animated hand hint with a label; null hides it */
+  hint(text: string | null): void;
 }
 
 /** Per-stage lighting mood, applied by the game shell when the stage loads. */
@@ -102,6 +104,7 @@ export abstract class BaseStage implements EnemyWorld {
   private spinRing: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial> | null = null;
   /** faint circle under the hero: anything inside it gets hit automatically */
   private reachRing: THREE.Mesh | null = null;
+  private autoTipShown = false;
   private handledDead = new Set<Enemy>();
 
   constructor(
@@ -196,6 +199,10 @@ export abstract class BaseStage implements EnemyWorld {
     const near = this.enemiesWithin(SWING_REACH);
     const crowd = this.enemiesWithin(SPIN_REACH);
     const wantMain = near > 0;
+    if (wantMain && !this.autoTipShown) {
+      this.autoTipShown = true;
+      this.host.floatText(h.pos, 'Auto attack!', 'good');
+    }
     const wantAlt = crowd >= SPIN_CROWD || (h.hp <= 2 && crowd > 0);
     if (this.reachRing) {
       this.reachRing.position.set(h.pos.x, 0.05, h.pos.z);
